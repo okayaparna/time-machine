@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Time Cube</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "gifuct-js": "https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <div id="ui">
+    <aside class="panel" id="panel">
+      <label class="btn primary upload" for="file">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 13V3m0 0L6 7m4-4 4 4M4 12v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-3" /></svg>
+        Upload Video or GIF
+        <input id="file" type="file" accept="video/*,image/gif" hidden />
+      </label>
+
+      <div class="source">
+        <div id="sourceName" class="source-name">Demo sequence</div>
+        <div id="sourceMeta" class="source-meta">—</div>
+      </div>
+
+      <section class="group">
+        <label class="row slider">
+          <span class="name">Frames</span><span class="val" id="framesVal"></span>
+          <input id="frames" type="range" min="12" max="240" step="1" value="90" />
+        </label>
+        <label class="row slider">
+          <span class="name">Spacing</span><span class="val" id="spacingVal"></span>
+          <input id="spacing" type="range" min="0.01" max="0.4" step="0.005" value="0.08" />
+        </label>
+        <label class="row slider">
+          <span class="name">Depth</span><span class="val" id="depthVal"></span>
+          <input id="depth" type="range" min="2" max="240" step="1" value="60" />
+        </label>
+        <label class="row slider">
+          <span class="name">Ghost opacity</span><span class="val" id="opacityVal"></span>
+          <input id="opacity" type="range" min="0.02" max="1" step="0.01" value="0.35" />
+        </label>
+      </section>
+
+      <section class="group">
+        <label class="row switch-row">
+          <span class="name" id="blendLabel">Additive blend</span>
+          <input id="additive" class="switch" type="checkbox" checked />
+        </label>
+        <label class="row switch-row">
+          <span class="name">Outline</span>
+          <input id="outline" class="switch" type="checkbox" checked />
+        </label>
+        <div class="row bg-row">
+          <span class="name">Background</span>
+          <div class="swatches">
+            <button class="swatch" data-color="#000000" style="--c:#000000" aria-label="Black"></button>
+            <button class="swatch" data-color="#1c1c1e" style="--c:#1c1c1e" aria-label="Graphite"></button>
+            <button class="swatch" data-color="#0b1a2e" style="--c:#0b1a2e" aria-label="Midnight"></button>
+            <button class="swatch" data-color="#f5f5f7" style="--c:#f5f5f7" aria-label="Silver"></button>
+            <button class="swatch" data-color="#ffffff" style="--c:#ffffff" aria-label="White"></button>
+            <label class="swatch custom" title="Custom colour">
+              <input id="bgColor" type="color" value="#000000" aria-label="Custom background colour" />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button class="btn" id="play"><span id="playLabel">Play</span></button>
+        <button class="btn" id="resetView">Reset View</button>
+      </div>
+    </aside>
+
+    <footer class="bottom">
+      <span id="counter" class="counter">0 / 0</span>
+      <input id="timeline" type="range" min="0" max="0" step="0.001" value="0" />
+    </footer>
+  </div>
+
+  <div id="dock" class="dock">
+    <button id="modeTime" class="icon-btn tool" data-tip="Scroll to move through time" aria-label="Scroll moves through time" aria-pressed="true">
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M4.6 4.2C2.9 6.5 2.9 13.5 4.6 15.8M4.6 4.2l1.7.1M4.6 4.2l-.1 1.7M4.6 15.8l1.7-.1M4.6 15.8l-.1-1.7" />
+        <path d="M10 11V5.2a1.1 1.1 0 0 1 2.2 0V10m0-.6a1.1 1.1 0 0 1 2.2 0v1.1m0-.5a1.1 1.1 0 0 1 2.2 0v2.8c0 2.3-1.7 3.9-3.9 3.9h-.9c-1.3 0-2.3-.5-3.1-1.4L7 13.2a1.1 1.1 0 0 1 1.6-1.5L10 13" />
+      </svg>
+    </button>
+    <button id="modeZoom" class="icon-btn tool" data-tip="Scroll to zoom · pinch works anytime" aria-label="Scroll zooms" aria-pressed="false">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="M8.5 6.3v4.4M6.3 8.5h4.4M12.6 12.6 17 17" /></svg>
+    </button>
+    <button id="spin" class="icon-btn tool" data-tip="Drag to rotate · click to auto-spin" aria-label="Auto-spin" aria-pressed="false">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.8 13.7c3.2-.6 5.2-2 5.2-3.7 0-2.2-3.6-4-8-4s-8 1.8-8 4c0 1.6 2.3 3.1 6.5 3.9M6.8 12.1l1.7 1.8-1.7 1.7" /></svg>
+    </button>
+    <button id="hideUI" class="icon-btn" aria-label="Hide controls">
+      <svg id="hideIcon" viewBox="0 0 20 20" aria-hidden="true"></svg>
+    </button>
+  </div>
+  <div id="tip" class="tip" role="tooltip"></div>
+
+  <div id="drop" class="drop"><div>Drop a video or GIF</div></div>
+  <div id="status" class="status"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
